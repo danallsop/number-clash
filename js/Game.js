@@ -67,9 +67,79 @@ class Game {
     }
   }
 
+  aiPlace(p) {
+    if (this.phase !== 'setup') return;
+    const ownRows = p === 1 ? [7, 6, 5] : [0, 1, 2];
+    const backRow = ownRows[0], midRow = ownRows[1], frontRow = ownRows[2];
+    const cols = Array.from({ length: COLS }, (_, i) => i);
+    fisherYates(cols);
+
+    // Place flag in a back-row corner, flanked by 1s as traps
+    const cornerCols = [0, COLS - 1];
+    fisherYates(cornerCols);
+    const flagCol = cornerCols[0];
+    const trapCols = [flagCol - 1, flagCol + 1].filter(c => c >= 0 && c < COLS);
+
+    const assignment = {};
+    const placed = new Set();
+
+    const assign = (r, c, type) => {
+      const idx = this.tray[p].findIndex(pc => pc.type === type && !placed.has(pc._id));
+      if (idx === -1) return false;
+      placed.add(this.tray[p][idx]._id);
+      assignment[`${r},${c}`] = this.tray[p].splice(idx, 1)[0];
+      return true;
+    };
+
+    assign(backRow, flagCol, 'FLG');
+    for (const tc of trapCols) assign(backRow, tc, 'ONE');
+
+    // Jokers on front row flanks — aggressive and hard to predict
+    const jokerCols = [0, COLS - 1];
+    fisherYates(jokerCols);
+    let jokersPlaced = 0;
+    for (const jc of jokerCols) {
+      if (jokersPlaced < 2 && assign(frontRow, jc, 'SPL')) jokersPlaced++;
+    }
+
+    // High-value pieces on front row
+    const highTypes = ['N13', 'N12', 'N11', 'N10', 'N9'];
+    let hi = 0;
+    for (let c = 0; c < COLS && hi < highTypes.length; c++) {
+      if (!assignment[`${frontRow},${c}`]) {
+        assign(frontRow, c, highTypes[hi++]);
+      }
+    }
+
+    // Fill remaining cells with whatever is left
+    const allCells = [];
+    for (const r of ownRows)
+      for (let c = 0; c < COLS; c++)
+        if (!assignment[`${r},${c}`] && !this.board[r][c]) allCells.push([r, c]);
+    fisherYates(allCells);
+    const remaining = [...this.tray[p]];
+    this.tray[p] = [];
+    fisherYates(remaining);
+    remaining.forEach((piece, i) => {
+      if (i < allCells.length) {
+        const [r, c] = allCells[i];
+        assignment[`${r},${c}`] = piece;
+      }
+    });
+
+    for (const key of Object.keys(assignment)) {
+      const [r, c] = key.split(',').map(Number);
+      this.board[r][c] = assignment[key];
+    }
+
+    this.sel = null;
+    this.render();
+    this.msg(`Computer placed pieces`);
+  }
+
   ready() {
     if (this.phase !== 'setup') return;
-    if (this.computer && this.tray[this.computer].length > 0) this.autoPlace(this.computer);
+    if (this.computer && this.tray[this.computer].length > 0) this.aiPlace(this.computer);
     if (this.tray[1].length > 0 || this.tray[2].length > 0) {
       this.msg('Place all pieces before starting!');
       return;
@@ -84,7 +154,7 @@ class Game {
   setMode(mode) {
     this.computer = mode;
     this.reset();
-    if (this.computer) this.autoPlace(this.computer);
+    if (this.computer) this.aiPlace(this.computer);
     document.querySelectorAll('.toggle-option').forEach(b => b.classList.toggle('active', +b.dataset.mode === mode));
   }
 
@@ -282,6 +352,42 @@ class Game {
 
   msg(m) { document.getElementById('status').textContent = m; }
 
+  scoreMove(fr, fc, tr, tc, isAttack) {
+    const piece = this.board[fr][fc];
+    const enemyBackRow = this.computer === 1 ? 0 : 7;
+    let score = 0;
+
+    if (isAttack) {
+      const def = this.board[tr][tc];
+      const dKnown = def.revealed || def.player === this.computer;
+
+      if (def.type === 'FLG') return 10000; // always capture the flag
+      if (dKnown) {
+        const result = this.fight(piece, def);
+        if (result.w === 'att') score += 50 + def.value;
+        else if (result.tie) score += 0;
+        else score -= piece.value + 20; // losing fight — penalise
+      } else {
+        // Unknown enemy: use pool probability
+        const prob = this.winProbability(piece.value, this.remainingEnemyPool);
+        score += (prob - 0.5) * 60;
+        // Jokers almost always win — boost them
+        if (piece.type === 'SPL') score += 40;
+      }
+    } else {
+      // Reward advancing toward enemy back row
+      const advance = this.computer === 1
+        ? (fr - tr) // player 1 moves toward row 0
+        : (tr - fr); // player 2 moves toward row 7
+      score += advance * 3;
+
+      // Extra reward for flag advancing
+      if (piece.type === 'FLG') score += Math.abs(tr - enemyBackRow) < Math.abs(fr - enemyBackRow) ? 20 : -10;
+    }
+
+    return score;
+  }
+
   generateMoves() {
     const moves = [];
     for (let r = 0; r < ROWS; r++)
@@ -290,10 +396,11 @@ class Game {
         if (!p || p.player !== this.computer) continue;
         const { moves: ms, attacks: at } = this.validMoves(r, c);
         for (const [nr, nc] of ms)
-          moves.push({ fr: r, fc: c, tr: nr, tc: nc, attack: false, score: 0 });
+          moves.push({ fr: r, fc: c, tr: nr, tc: nc, attack: false, score: this.scoreMove(r, c, nr, nc, false) });
         for (const [nr, nc] of at)
-          moves.push({ fr: r, fc: c, tr: nr, tc: nc, attack: true, score: 0 });
+          moves.push({ fr: r, fc: c, tr: nr, tc: nc, attack: true, score: this.scoreMove(r, c, nr, nc, true) });
       }
+    moves.sort((a, b) => b.score - a.score);
     return moves;
   }
 
@@ -318,14 +425,54 @@ class Game {
 
   evaluate(aiPieces, enemyPieces) {
     let score = 0;
-    aiPieces.forEach(p => {
-      if (p.type === 'FLG') score += 100;
-      else score += p.value;
-    });
-    enemyPieces.forEach(p => {
-      if (p.revealed && p.type === 'FLG') score -= 100;
-      else score -= p.revealed ? p.value : this.avgUnrevealedValue();
-    });
+    const enemy = this.computer === 1 ? 2 : 1;
+    const aiBackRow = this.computer === 1 ? 7 : 0;
+    const enemyBackRow = this.computer === 1 ? 0 : 7;
+    const aiFlag = aiPieces.find(p => p.type === 'FLG');
+    const enemyFlag = enemyPieces.find(p => p.revealed && p.type === 'FLG');
+
+    for (const p of aiPieces) {
+      if (p.type === 'FLG') {
+        score += 500;
+        // Penalise flag being in open, unguarded positions
+        const guards = aiPieces.filter(q => q.type !== 'FLG' &&
+          Math.abs(q.r - p.r) + Math.abs(q.c - p.c) === 1).length;
+        score += guards * 15;
+        // Penalise flag for being close to enemy front
+        const distToEnemy = Math.abs(p.r - enemyBackRow);
+        score += distToEnemy * 5;
+      } else {
+        score += p.value;
+        // Positional bonus: reward pieces advancing toward enemy
+        const advance = Math.abs(p.r - aiBackRow);
+        score += advance * 1.5;
+        // Joker bonus for being near front
+        if (p.type === 'SPL') score += advance * 2;
+      }
+    }
+
+    for (const p of enemyPieces) {
+      if (p.revealed && p.type === 'FLG') {
+        score -= 500;
+      } else {
+        const val = p.revealed ? p.value : this.avgUnrevealedValue();
+        score -= val;
+        // Penalise enemy pieces that are close to our flag
+        if (aiFlag) {
+          const distToOurFlag = Math.abs(p.r - aiFlag.r) + Math.abs(p.c - aiFlag.c);
+          score -= Math.max(0, 10 - distToOurFlag) * 2;
+        }
+      }
+    }
+
+    // Bonus for known enemy flag position: pieces adjacent to it
+    if (enemyFlag) {
+      for (const p of aiPieces) {
+        const dist = Math.abs(p.r - enemyFlag.r) + Math.abs(p.c - enemyFlag.c);
+        if (dist <= 2) score += (3 - dist) * 20;
+      }
+    }
+
     return score;
   }
 
@@ -337,10 +484,31 @@ class Game {
     return list;
   }
 
+  winProbability(attVal, pool) {
+    if (pool.length === 0) return 0.5;
+    let wins = 0, ties = 0;
+    for (const type of pool) {
+      const dv = DEF[type].value;
+      if (attVal > dv) wins++;
+      else if (attVal === dv) ties++;
+    }
+    return (wins + ties * 0.5) / pool.length;
+  }
+
   fogFight(att, def) {
     const aKnown = att.revealed || att.player === this.computer;
     const dKnown = def.revealed || def.player === this.computer;
     if (aKnown && dKnown) return this.fight(att, def);
+
+    if (aKnown && !dKnown) {
+      // Attacker is AI, defender is unknown enemy — use remaining pool
+      const pool = this.remainingEnemyPool;
+      const prob = this.winProbability(att.value, pool);
+      if (prob >= 0.65) return { w: 'att', tie: false };
+      if (prob <= 0.35) return { w: 'def', tie: false };
+      return { tie: true };
+    }
+
     const aVal = aKnown ? att.value : this.avgUnrevealedValue();
     const dVal = dKnown ? def.value : this.avgUnrevealedValue();
     if (aVal > dVal) return { w: 'att', tie: false };
@@ -387,11 +555,15 @@ class Game {
     const moves = this.simMoves(board, player);
     if (moves.length === 0) return isMax ? -9999 : 9999;
 
+    // Attacks first for better alpha-beta pruning
+    moves.sort((a, b) => (b.attack ? 1 : 0) - (a.attack ? 1 : 0));
+    const cap = 30;
+
     if (isMax) {
       let maxEval = -Infinity;
       let i = 0;
       for (const m of moves) {
-        if (i++ > 25) break;
+        if (i++ >= cap) break;
         const ev = this.minimax(m.board, depth - 1, false, alpha, beta);
         maxEval = Math.max(maxEval, ev);
         alpha = Math.max(alpha, ev);
@@ -402,7 +574,7 @@ class Game {
       let minEval = Infinity;
       let i = 0;
       for (const m of moves) {
-        if (i++ > 25) break;
+        if (i++ >= cap) break;
         const ev = this.minimax(m.board, depth - 1, true, alpha, beta);
         minEval = Math.min(minEval, ev);
         beta = Math.min(beta, ev);
