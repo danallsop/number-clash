@@ -14,8 +14,8 @@ const DEF = {
   'N3':  { label: '3',  value: 3  },
   'N2':  { label: '2',  value: 2  },
   'ONE': { label: '1',  value: 1  },
-  'SPL': { label: '14', value: 14 },
-  'FLG': { label: '0',  value: 0  }
+  'SPL': { label: 'Joker', value: 14 },
+  'FLG': { label: 'Flag', value: 0  }
 };
 const ARMY = 'N13,N12,N11,N10,N9,N8,N7,N6,N5,N4,N3,N2,ONE,ONE,ONE,ONE,ONE,ONE,SPL,SPL,FLG'.split(',');
 

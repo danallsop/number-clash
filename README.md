@@ -9,8 +9,8 @@ A hot-seat 2-player board game of hidden information and combat.
 - **Movement:** Pieces move one cell orthogonally (up/down/left/right). You cannot move onto your own pieces.
 - **Combat:** When you move onto an enemy piece, higher number wins. The loser is removed; the winner survives.
 - **Numbers (highest to lowest):** `14 13 12 11 10 9 8 7 6 5 4 3 2 1 0`
-- **14:** Beats all numbered pieces except 1. Loses to 1. Ties with another 14.
-- **0 (Flag):** Loses to any attacker. You win if you capture the enemy flag OR move your flag to the enemy back row.
+- **Joker (14):** Beats all numbered pieces except 1. Loses to 1. Ties with another Joker.
+- **Flag:** Loses to any attacker. You win if you capture the enemy flag OR move your flag to the enemy back row.
 - **Revealed pieces:** After a battle, both participants are permanently revealed to both players.
 
 ## Setup
