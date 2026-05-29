@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Number Clash — Rules</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 20px; }
+  h1 { color: #d4a74a; font-size: 1.5em; margin-bottom: 16px; }
+  h2 { color: #aab; font-size: 1.1em; margin: 12px 0 6px; }
+  p, li { line-height: 1.6; font-size: 0.9em; }
+  ul { padding-left: 18px; }
+  li { margin-bottom: 4px; }
+  .badge { display: inline-block; padding: 0 6px; border-radius: 3px; font-weight: 700; font-size: 0.9em; }
+  .badge.spl { background: #5a4a1a; color: #ff8; }
+  .badge.flg { background: #5a2a2a; color: #f88; }
+  .badge.n { background: #3a4a6a; color: #eee; }
+  .ref-table { background: #0f1a2e; border-radius: 6px; padding: 10px 14px; margin: 8px 0; font-size: 0.9em; line-height: 1.8; }
+  .ref-table .rule { padding: 2px 0; }
+  .close { margin-top: 20px; }
+  .close a { color: #4a9eff; text-decoration: none; }
+  .close a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<h1>Number Clash — Rules</h1>
+
+<h2>Objective</h2>
+<p>Capture the enemy <span class="badge flg">Flag</span> or move your <span class="badge flg">Flag</span> to the enemy back row.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li>9&times;8 board. Each player has 3 rows on their side (P1: bottom, P2: top).</li>
+  <li>Drag your 21 pieces from your tray to any empty cell in your 3 rows.</li>
+  <li>Click <strong>Ready</strong> when both sides are placed.</li>
+</ul>
+
+<h2>Movement</h2>
+<ul>
+  <li>Pieces move one cell orthogonally (up/down/left/right).</li>
+  <li>You cannot move onto your own pieces.</li>
+  <li>You cannot move into the enemy's back row (that requires a combat win).</li>
+</ul>
+
+<h2>Combat</h2>
+<div class="ref-table">
+  <div class="rule">13 &gt; 12 &gt; 11 &gt; 10 &gt; 9 &gt; 8 &gt; 7 &gt; 6 &gt; 5 &gt; 4 &gt; 3 &gt; 2 &gt; 1 &mdash; higher number wins</div>
+  <div class="rule"><span class="badge spl">14</span> beats all numbered pieces (2&ndash;13), loses to <span class="badge n">1</span></div>
+  <div class="rule"><span class="badge flg">0</span> (Flag) captured by any attacking piece</div>
+  <div class="rule">Equal numbers &mdash; both eliminated</div>
+</div>
+
+<h2>Fog of War</h2>
+<ul>
+  <li>You see only your own pieces' numbers. Enemy pieces show as <strong>?</strong>.</li>
+  <li>After a battle, both participants are permanently revealed to both players.</li>
+  <li>Revealed enemy pieces keep their dark styling but show their number.</li>
+</ul>
+
+<h2>Flag Victory</h2>
+<ul>
+  <li>Capture the enemy <span class="badge flg">Flag</span> to win immediately.</li>
+  <li>Move your <span class="badge flg">Flag</span> to the enemy back row to win immediately.</li>
+</ul>
+
+<h2>Pieces</h2>
+<div class="ref-table">
+  <div class="rule"><span class="badge n">13</span> &bull; <span class="badge n">12</span> &bull; <span class="badge n">11</span> &bull; <span class="badge n">10</span></div>
+  <div class="rule"><span class="badge n">9</span> &bull; <span class="badge n">8</span> &bull; <span class="badge n">7</span> &bull; <span class="badge n">6</span></div>
+  <div class="rule"><span class="badge n">5</span> &bull; <span class="badge n">4</span> &bull; <span class="badge n">3</span> &bull; <span class="badge n">2</span></div>
+  <div class="rule"><span class="badge n">1</span> (x6) &bull; <span class="badge spl">14</span> (x2) &bull; <span class="badge flg">0</span> Flag</div>
+  <div class="rule" style="color:#667;font-size:0.85em;margin-top:4px;">P1 has <span style="color:#4a9eff;">blue</span> pieces, P2 has <span style="color:#ff4a4a;">red</span> pieces.</div>
+</div>
+
+<div class="close"><a href="#" onclick="window.close()">Close this window</a></div>
+</body>
+</html>

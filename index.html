@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Number Clash</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+  <h1>Number Clash</h1>
+  <div id="turnBar" class="turn-bar p1">
+    <span><span class="turn-indicator p1"></span><span id="turnLabel">Player 1's Turn</span></span>
+  </div>
+  <div class="stats">
+    <span>P1: <strong id="p1Count">21</strong></span>
+    <span>P2: <strong id="p2Count">21</strong></span>
+  </div>
+  <div id="tray2" class="tray"></div>
+  <div id="board" class="board"></div>
+  <div id="tray1" class="tray"></div>
+  <div id="status" class="status">Select a piece to move</div>
+  <div class="controls">
+    <div class="mode-toggle">
+      <button class="toggle-option active" data-mode="0" onclick="game.setMode(0)">Human</button>
+      <button class="toggle-option" data-mode="2" onclick="game.setMode(2)">AI</button>
+    </div>
+    <button class="btn" onclick="window.open('rules.html','_blank')">Rules</button>
+    <button class="btn" id="readyBtn" onclick="game.ready()">Ready</button>
+    <button class="btn reset" onclick="game.reset()">New Game</button>
+  </div>
+</div>
+
+<script src="js/defs.js"></script>
+<script src="js/Game.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
