@@ -51,10 +51,12 @@ Game/
 
 ## AI
 
-The computer opponent uses **iterative deepening** minimax with alpha-beta pruning (up to 25 simulated moves per search level, 1-second time budget). It searches at depth 1, 2, 3, ... within the time limit, always playing the best move from the deepest completed depth. Quiet positions search deeper; complex ones stay shallow.
+The computer opponent uses **iterative deepening minimax with alpha-beta pruning** (up to 30 moves per search level, 1-second time budget). It searches at depth 1, 2, 3, … within the time limit, always committing to the best move from the deepest completed depth.
 
-**Fog of war:** The AI only knows the exact rank of enemy pieces revealed in combat. Unrevealed pieces are estimated using the average value of remaining unknown types from a starting pool that shrinks as pieces are revealed. Combat simulation during lookahead uses `fogFight` — exact resolution when both sides are known, value-vs-average estimation otherwise.
+**Strategic setup:** The AI places its pieces using a fixed strategy rather than randomly — Flag in a back-row corner, `1`s flanking it as Joker traps, Jokers on the front flanks, and high-value pieces (`13`–`9`) across the front row.
 
-**Evaluation:** Material sum — AI piece values minus enemy piece values (estimated average for unrevealed). Own flag is worth +100, enemy flag –100, so the AI actively pursues the win condition. Terminal flag loss/gain is detected immediately with ±9999 scores, pruning irrelevant branches.
+**Fog of war:** The AI tracks a pool of all unrevealed enemy piece types, shrinking it as pieces are revealed in combat. When deciding whether to attack an unknown piece, it calculates a win probability against the actual remaining pool rather than using a flat average. Jokers are always favoured for attacks since they beat almost everything.
 
-**Move ordering:** `simMoves` returns attacks before non-attacks, improving alpha-beta pruning efficiency.
+**Evaluation:** Positions are scored on multiple factors — material balance, positional advance toward the enemy back row, flag protection (bonus for friendly pieces adjacent to own flag), enemy proximity to own flag (penalty), and proximity to a revealed enemy flag. Terminal flag capture/loss scores ±9999 and immediately prunes irrelevant branches.
+
+**Move ordering:** Candidates are scored and sorted before minimax evaluates them — guaranteed wins first, then probable wins, then advances, then retreats. This ensures the cap of 30 moves per node cuts the weakest candidates, and improves alpha-beta pruning efficiency.
